@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Handle /start command",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "message": {
+          "chat": {"id": 123456},
+          "from": {"id": 123456, "username": "testuser"},
+          "text": "/start"
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "status": "ok"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle media link",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "message": {
+          "chat": {"id": 123456},
+          "from": {"id": 123456, "username": "testuser"},
+          "text": "https://t.me/channel/123"
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "status": "ok"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

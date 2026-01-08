@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Icon from '@/components/ui/icon';
+import { API_CONFIG } from '@/config/api';
+import { useToast } from '@/hooks/use-toast';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const activityData = [
@@ -42,6 +44,37 @@ const recentLogs = [
 
 export default function Index() {
   const [selectedTab, setSelectedTab] = useState('dashboard');
+  const [botStatus, setBotStatus] = useState<'active' | 'inactive'>('inactive');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setWebhookUrl(API_CONFIG.TELEGRAM_BOT);
+    checkBotStatus();
+  }, []);
+
+  const checkBotStatus = async () => {
+    try {
+      const response = await fetch(API_CONFIG.TELEGRAM_BOT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: true })
+      });
+      if (response.ok) {
+        setBotStatus('active');
+      }
+    } catch (error) {
+      setBotStatus('inactive');
+    }
+  };
+
+  const copyWebhookUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast({
+      title: 'Скопировано!',
+      description: 'Webhook URL скопирован в буфер обмена'
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -54,9 +87,12 @@ export default function Index() {
             </h1>
             <p className="text-muted-foreground mt-1">Панель управления и аналитики</p>
           </div>
-          <Badge variant="outline" className="px-4 py-2 text-sm">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
-            Бот активен
+          <Badge 
+            variant="outline" 
+            className={`px-4 py-2 text-sm ${botStatus === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/30' : 'bg-red-500/10 text-red-500 border-red-500/30'}`}
+          >
+            <div className={`w-2 h-2 rounded-full mr-2 ${botStatus === 'active' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            {botStatus === 'active' ? 'Бот активен' : 'Бот не настроен'}
           </Badge>
         </div>
 
@@ -411,23 +447,54 @@ export default function Index() {
                       <p className="text-sm text-muted-foreground">Telegram API</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">
-                    Активен
+                  <Badge 
+                    variant="outline" 
+                    className={botStatus === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/30' : 'bg-red-500/10 text-red-500 border-red-500/30'}
+                  >
+                    {botStatus === 'active' ? 'Активен' : 'Не настроен'}
                   </Badge>
+                </div>
+
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Icon name="Webhook" className="text-primary" size={20} />
+                      <p className="font-medium">Webhook URL для бота</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Используй этот URL в настройках Telegram бота
+                    </p>
+                    <div className="flex gap-2">
+                      <code className="flex-1 px-3 py-2 bg-muted rounded text-sm font-mono overflow-x-auto">
+                        {webhookUrl}
+                      </code>
+                      <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
+                        <Icon name="Copy" size={16} />
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1 mt-3">
+                      <p>📝 Шаги настройки:</p>
+                      <p>1. Скопируй URL выше</p>
+                      <p>2. Открой терминал и выполни:</p>
+                      <code className="block px-2 py-1 bg-muted rounded mt-1">
+                        curl -X POST https://api.telegram.org/bot[ТУТ_ТОКЕН]/setWebhook?url=[ТУТ_URL]
+                      </code>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <Icon name="Key" className="text-primary" />
                     <div>
-                      <p className="font-medium">API ключ</p>
-                      <p className="text-sm text-muted-foreground font-mono">••••••••••••••••</p>
+                      <p className="font-medium">Bot Token</p>
+                      <p className="text-sm text-muted-foreground">Добавлен в секретах проекта</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <Icon name="Edit" size={16} className="mr-2" />
-                    Изменить
-                  </Button>
+                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">
+                    <Icon name="Check" size={14} className="mr-1" />
+                    Настроен
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
